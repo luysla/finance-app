@@ -4,17 +4,19 @@ import 'dart:async';
 import 'dart:convert';
 
 const requestURL =
-    "https://api.hgbrasil.com/finance/stock_price?key=6afb0ece&symbol=BIDI4";
-
-/* const requestURL = "https://api.hgbrasil.com/finance/stock_price?key=6afb0ece&symbol"; */
+    "https://api.hgbrasil.com/finance/stock_price?key=6afb0ece&symbol=";
 
 void main() async {
   runApp(const MyApp());
 }
 
-Future<Map> getData() async {
-  http.Response response = await http.get(Uri.parse(requestURL));
-  return json.decode(response.body);
+Future<Map> getData(symbol) async {
+    http.Response response = await http.get(Uri.parse(requestURL + symbol));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return throw Exception('Erro ao carregar dados...');
+    }
 }
 
 class MyApp extends StatelessWidget {
@@ -42,19 +44,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final symbolController = TextEditingController();
+  TextEditingController symbolController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String _textInfo = "";
-  double value = 0;
+  String _symbol = "";
 
-  void _validate() {}
+  void _getDataFromAPI() async {
+    _symbol = symbolController.text;
 
-  void _resetField() {
-    _formKey.currentState!.reset();
-    symbolController.clear();
-    setState(() {
-      _textInfo = "";
-    });
+    if(_symbol.isNotEmpty) {
+      await getData(_symbol);
+    }
   }
 
   @override
@@ -66,100 +65,98 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.white,
             )),
         centerTitle: true,
-        actions: <Widget>[
-          /* const Icon(
-            Icons.monetization_on,
-            color: Colors.white,
-            size: 30.0,
-          ), */
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetField,
-            color: Colors.white,
-          )
-        ],
       ),
-      body: FutureBuilder<Map>(
-          future: getData(),
-          builder: (context, snapshot) {
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-              case ConnectionState.active:
-              case ConnectionState.waiting:
-                return const Center(
-                    child: Text(
-                  "Carregando dados...",
-                  style: TextStyle(color: Colors.amber, fontSize: 25.0),
-                  textAlign: TextAlign.center,
-                ));
-              default:
-                if (snapshot.hasError) {
-                  return const Center(
+
+      body: SingleChildScrollView (
+        padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 0.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const Icon(Icons.monetization_on,
+                  size: 100, color: Colors.orange),
+              TextFormField(
+                keyboardType: TextInputType.text,
+                decoration: const InputDecoration(
+                    labelText: "Nome da ação",
+                    labelStyle: TextStyle(color: Colors.orange)),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.orange, fontSize: 25.0),
+                controller: symbolController,
+                validator: (value) {
+                  if (value!.isEmpty) {
+                    return "* Insira o nome da ação para continuar";
+                  }
+                },
+              ),
+              Padding(
+                  padding:
+                    const EdgeInsets.only(top: 10.0, bottom: 10.0),
+                    child: ButtonTheme(
+                    height: 50.0,
+                    highlightColor: Colors.amber,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                            _getDataFromAPI();
+                            setState(() {});
+                        }
+                      },
+                      child: const Text(
+                        "Ver valor",
+                        style: TextStyle(
+                            color: Colors.white, fontSize: 25.0),
+                      ),
+                    )),
+              ),
+
+              _symbol.isEmpty ?
+                const Center(
                       child: Text(
-                    "Erro ao carregar dados...",
+                    "",
                     style: TextStyle(color: Colors.amber, fontSize: 25.0),
                     textAlign: TextAlign.center,
-                  ));
-                } else {
-                  _textInfo =
-                      snapshot.data!["results"]["price"].toStringAsFixed(2);
-
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 0.0),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          const Icon(Icons.monetization_on,
-                              size: 100, color: Colors.orange),
-                          TextFormField(
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                                labelText: "Nome da ação",
-                                labelStyle: TextStyle(color: Colors.orange)),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: Colors.orange, fontSize: 25.0),
-                            controller: symbolController,
-                            validator: (value) {
-                              if (value!.isEmpty) {
-                                return "* Insira o nome da ação para continuar";
-                              }
-                            },
-                          ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(top: 10.0, bottom: 10.0),
-                            child: ButtonTheme(
-                                height: 50.0,
-                                highlightColor: Colors.amber,
-                                child: RaisedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate())
-                                      _validate();
-                                  },
-                                  child: const Text(
-                                    "Ver valores",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 25.0),
-                                  ),
-                                  color: Colors.orange,
-                                )),
-                          ),
-                          Text(
-                            _textInfo,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 25.0),
-                          )
-                        ],
-                      ),
-                    ),
-                  );
+                  ))
+              :
+              FutureBuilder<Map>(
+                future: getData(_symbol),
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                  case ConnectionState.none:
+                  case ConnectionState.active:
+                  case ConnectionState.waiting:
+                    return const Center(
+                        child: Text(
+                      "Carregando dados...",
+                      style: TextStyle(color: Colors.amber, fontSize: 25.0),
+                      textAlign: TextAlign.center,
+                    ));
+                  default:
+                    if (snapshot.hasError) {
+                      return const Center(
+                          child: Text(
+                        "Erro ao carregar dados...",
+                        style: TextStyle(color: Colors.amber, fontSize: 25.0),
+                        textAlign: TextAlign.center,
+                      ));
+                    } else {
+                        return Text(
+                        snapshot.data!["results"][_symbol.toUpperCase()]["price"] == null ?
+                        "Insira um nome válido!"
+                        :  "Valor: R\$" + snapshot.data!["results"][_symbol.toUpperCase()]["price"].toStringAsFixed(2),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            color: Colors.amber, fontSize: 25.0),
+                        );
+                    }
+                  }
                 }
-            }
-          }),
+              )
+          ]
+      )
+      )),
     );
   }
 }

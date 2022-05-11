@@ -56,6 +56,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _resetField() {
+    _formKey.currentState?.reset();
+    symbolController.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,6 +70,13 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.white,
             )),
         centerTitle: true,
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _resetField,
+            color: Colors.white,
+          )
+        ]
       ),
 
       body: SingleChildScrollView (

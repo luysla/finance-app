@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 
 const requestURL =
-    "https://api.hgbrasil.com/finance/stock_price?key=6afb0ece&symbol=";
+    "https://api.hgbrasil.com/finance/stock_price?key=cbaef259&symbol=";
 
 void main() async {
   runApp(const MyApp());
